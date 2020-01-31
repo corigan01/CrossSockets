@@ -48,7 +48,7 @@ std::string GetString();
 private:
     std::thread SocketThreadRx;
     std::thread SocketThreadTx;
-    Server ConnectionProp;
+    Server ConnectionProp; 
 
     bool IsConnectedTx = false;
     bool IsConnectedRx = false;
@@ -61,6 +61,8 @@ private:
 
     void ServerTx();
     void ServerRx();*/
+
+#define bufferSize 1000000
 
 // == CPSocket Methods
     // initing
@@ -176,7 +178,19 @@ void CPSocket::ClientRx() {
 
 
     // Start Authing
+    if (!ThreadShouldStop) {
+        // Do-while loop to send and receive data
+        char buf[bufferSize];
 
+
+        displayout(D_LOG, "CONNECTED");
+        IsConnectedRx = true;
+
+    
+        displayout(D_LOG, "Begining Auth");
+
+        
+    }
     
 
     return;
