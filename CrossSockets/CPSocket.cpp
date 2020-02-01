@@ -62,7 +62,9 @@ private:
     void ServerTx();
     void ServerRx();*/
 
+#define AuthString "AUTH - SSC HyperSocketLink (COM METHOD START - SECURE SOCKET COMMUNICATION)"
 #define bufferSize 1000000
+#define ConnectionTryCount 10
 
 // == CPSocket Methods
     // initing
@@ -107,7 +109,7 @@ bool CPSocket::IsConnected() {
     return IsConnectedRx && IsConnectedTx;
 }
 bool CPSocket::IsAuth() {
-    return IsAuthRx && IsAuthTx;
+    return IsAuthSSC;
 }
 
 void CPSocket::SendString(std::string RecStr) {
@@ -119,18 +121,20 @@ std::vector<std::string> CPSocket::GetString() {
 }
 
 void CPSocket::ClientRx() {
-    Sleep(100);
-    displayout(D_INFO, "RX STARTING ...");
-    displayout(D_INFO, "RX Starting Connection: %s::%d", ConnectionProp.IP, ConnectionProp.InBoundPort);
+RxStart:
 
-    displayout(D_INFO, "Windows Platform - Startig WinSock");
+    Sleep(120);
+    displayout(D_INFO, "[RX] STARTING ...");
+    displayout(D_INFO, "[RX] Starting Connection: %s::%d", ConnectionProp.IP, ConnectionProp.InBoundPort);
+
+    displayout(D_INFO, "[RX] Windows Platform - Startig WinSock");
 
     WSAData Data;
     WORD ver = MAKEWORD(2, 2);
 
     int WS_START = WSAStartup(ver, &Data);
     if (WS_START != 0) {
-        displayout(D_ERROR, "Unable To Start WinSock. ERROR #%d", WS_START);
+        displayout(D_ERROR, "[RX] Unable To Start WinSock. ERROR #%d", WS_START);
 
         return;
     }
@@ -139,13 +143,13 @@ void CPSocket::ClientRx() {
     SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock == INVALID_SOCKET)
     {
-        displayout(D_ERROR, "Can't create socket, Err #%s", WSAGetLastError());
+        displayout(D_ERROR, "[RX] Can't create socket, Err #%s", WSAGetLastError());
         WSACleanup();
         return;
     }
 
-    displayout(D_INFO, "Winsock Started!");
-    displayout(D_INFO, "Starting hint structure...");
+    displayout(D_INFO, "[RX] Winsock Started!");
+    displayout(D_INFO, "[RX] Starting hint structure...");
     
     // Fill in a hint structure
     sockaddr_in hint;
@@ -155,48 +159,158 @@ void CPSocket::ClientRx() {
 
     // Connect to server
 
-    displayout(D_INFO, "Setup complete!");
+    displayout(D_INFO, "[RX] Setup complete!");
     
-
+    int TryCount = 0;
     do {
-        static int TryCount = 0;
-        displayout(D_INFO, "Conneting...");
+        displayout(D_INFO, "[RX] Conneting...");
         int connResult = connect(sock, (sockaddr*)&hint, sizeof(hint));
         if (connResult == SOCKET_ERROR)
         {
-            displayout(D_WARNING, "Connection Failed, Retrying...");
+            displayout(D_WARNING, "[RX] Connection Failed, Retrying...");
             TryCount++;
         }
         else {
             break;
         }
-        if (TryCount >= 5) {
+        if (TryCount >= ConnectionTryCount) {
             ThreadShouldStop = true;
             return;
         }
     } while (!ThreadShouldStop);
 
+    displayout(D_INFO, "[RX] CONNECTED");
+    IsConnectedRx = true;
 
+#ifndef DISABLE_AUTH
     // Start Authing
     if (!ThreadShouldStop) {
-        // Do-while loop to send and receive data
-        char buf[bufferSize];
+        displayout(D_LOG, "[RX] Begining Auth...");
 
 
-        displayout(D_LOG, "CONNECTED");
-        IsConnectedRx = true;
+        while (!ThreadShouldStop) {
+            std::string GetRsc = RxV(sock);
+            displayout(D_INFO, GetRsc.c_str());
 
-    
-        displayout(D_LOG, "Begining Auth");
 
-        
+            if (GetRsc == AuthString) {
+                displayout(D_INFO, "[RX] Got Init String ");
+                IsAuthSSC = true;
+                break;
+            }
+        }
     }
     
+#endif // !DISABLE_AUTH
+
+    while (!ThreadShouldStop) {
+        std::string Rx = RxV(sock);
+        if (Rx.size() > 0) {
+            RxQue.push_back(Rx);
+        }
+    }
+
+    if (ThreadShouldRestart) {
+        ThreadShouldStop = false;
+        ThreadShouldRestart = false;
+        goto RxStart;
+    }
 
     return;
 }
 void CPSocket::ClientTx() {
+TxStart:
+
     Sleep(100);
+    displayout(D_INFO, "[TX] STARTING ...");
+    displayout(D_INFO, "[TX] Starting Connection: %s::%d", ConnectionProp.IP, ConnectionProp.InBoundPort);
+
+    displayout(D_INFO, "[TX] Windows Platform - Startig WinSock");
+
+    WSAData Data;
+    WORD ver = MAKEWORD(2, 2);
+
+    int WS_START = WSAStartup(ver, &Data);
+    if (WS_START != 0) {
+        displayout(D_ERROR, "[TX] Unable To Start WinSock. ERROR #%d", WS_START);
+
+        return;
+    }
+
+    // Create The Socket
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock == INVALID_SOCKET)
+    {
+        displayout(D_ERROR, "[TX] Can't create socket, Err #%s", WSAGetLastError());
+        WSACleanup();
+        return;
+    }
+
+    displayout(D_INFO, "[TX] Winsock Started!");
+    displayout(D_INFO, "[TX] Starting hint structure...");
+
+    // Fill in a hint structure
+    sockaddr_in hint;
+    hint.sin_family = AF_INET;
+    hint.sin_port = htons(ConnectionProp.InBoundPort);
+    inet_pton(AF_INET, ConnectionProp.IP.c_str(), &hint.sin_addr);
+
+    // Connect to server
+
+    displayout(D_INFO, "[TX] Setup complete!");
+
+    int TryCount = 0;
+    do {
+        displayout(D_INFO, "[TX] Conneting...");
+        int connResult = connect(sock, (sockaddr*)&hint, sizeof(hint));
+        if (connResult == SOCKET_ERROR)
+        {
+            displayout(D_WARNING, "[TX] Connection Failed, Retrying...");
+            TryCount++;
+        }
+        else {
+            break;
+        }
+        if (TryCount >= ConnectionTryCount) {
+            ThreadShouldStop = true;
+            return;
+        }
+    } while (!ThreadShouldStop);
+
+    displayout(D_INFO, "[TX] CONNECTED");
+    IsConnectedRx = true;
+
+#ifndef DISABLE_AUTH
+    // Start Authing
+    if (!ThreadShouldStop) {
+        displayout(D_INFO, "[TX] Sending Auth");
+        while (!ThreadShouldStop) {
+            
+            TxV(sock, AuthString);
+
+            if (IsAuthSSC) {
+                break;
+            }
+        }
+    }
+
+#endif // !DISABLE_AUTH
+
+    while (!ThreadShouldStop) {
+        if (TxQue.size() > 0) {
+            TxV(sock, TxQue[0]);
+            displayout(D_LOG, TxQue[0].c_str());
+            TxQue.erase(TxQue.begin());
+        }
+    }
+
+    if (ThreadShouldRestart) {
+        ThreadShouldStop = false;
+        ThreadShouldRestart = false;
+        goto TxStart;
+    }
+
+    return;
 }
 
 void CPSocket::ServerRx() {
@@ -206,5 +320,27 @@ void CPSocket::ServerTx() {
     Sleep(100);
 }
 
+std::string CPSocket::RxV(SOCKET sock) {
+    char buf[bufferSize + 10];
+    ZeroMemory(buf, bufferSize + 10);
 
+    // Wait for client to send data
+    int bytesReceived = recv(sock, buf, bufferSize + 10, 0);
+    if (bytesReceived == SOCKET_ERROR)
+    {
+        displayout(D_ERROR, "Error in recv, Quitting Thread...");
+        ThreadShouldStop = true;
+    }
 
+    if (bytesReceived == 0)
+    {
+        displayout(D_WARNING, "Disconnected...");
+        ThreadShouldStop = true;
+    }
+    ThreadShouldRestart = true;
+    return std::string(buf);
+}
+
+void CPSocket::TxV(SOCKET COM, std::string Data) {
+    send(COM, Data.c_str(), Data.length() + 1, 0);
+}

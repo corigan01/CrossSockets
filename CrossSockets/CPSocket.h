@@ -81,10 +81,10 @@ private:
 
     bool IsConnectedTx = false;
     bool IsConnectedRx = false;
-    bool IsAuthTx = false;
-    bool IsAuthRx = false;
+    bool IsAuthSSC = false;
     bool IsSocketsFull = false;
     bool ThreadShouldStop = false;
+    bool ThreadShouldRestart = false;
 
     int AUTH_NUMBER = 0;
 
@@ -103,6 +103,10 @@ private:
         std::cout << debugcolor[0] << std::endl;
 
     }
+
+    void TxV(SOCKET COM, std::string Data);
+
+    std::string RxV(SOCKET);
 };
 
 
