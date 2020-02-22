@@ -6,12 +6,16 @@
 int main() {
 	CPSocket socket("127.0.0.1", 56040, 56040);
 
-	socket.StartClient();
+	//socket.StartClient();
+	socket.StartServer();
 
-	Sleep(1000);
-	socket.SendString("Hello, I am CrossSocket");
-	socket.SendString("Hello, I am CrossSocket");
-	socket.SendString("Hello, I am CrossSocket");
+	while (true) {
+		std::string Input = "";
+		std::cin >> Input;
 
+		if (Input == "STOP") break;
+	}
+
+	socket.~CPSocket();
 
 }

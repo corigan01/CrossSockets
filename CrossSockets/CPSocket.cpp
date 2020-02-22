@@ -71,8 +71,33 @@ private:
 CPSocket::CPSocket() { srand(time(0)); AUTH_NUMBER = (((rand() + rand()) / rand()) * rand() + rand() + rand()); }
 CPSocket::CPSocket(std::string IP, int TxPort, int RxPort) { srand(time(0)); ConnectionProp.IP = IP; ConnectionProp.InBoundPort = RxPort; ConnectionProp.OutBound = TxPort; AUTH_NUMBER = (((rand() + rand()) / rand()) * rand() + rand() + rand());  }
 CPSocket::~CPSocket() { 
-    SocketThreadRx.join();
-    SocketThreadTx.join();
+    ThreadShouldStop = true;
+    ThreadShouldRestart = false;
+
+    Sleep(100);
+
+    bool SocketThreadRxDone = false;
+    bool SocketThreadTxDone = false;
+
+    displayout(D_WARNING, "CPSocket Closing...");
+
+    while (!SocketThreadRxDone && !SocketThreadTxDone && AliveServers.size() != 0) {
+        
+        if (SocketThreadRx.joinable()) {
+            SocketThreadRx.join();
+            SocketThreadRxDone = true;
+            displayout(D_INFO, "[RX] Joined Main");
+        }
+        if (SocketThreadTx.joinable()) {
+            SocketThreadTx.join();
+            SocketThreadTxDone = true;
+            displayout(D_INFO, "[TX] Joined Main");
+        }
+
+        
+    }
+    
+    displayout(D_WARNING, "CPSocket Closed!");
 }
 
     // starting servers
@@ -91,18 +116,7 @@ void CPSocket::StartClient() {
 }
 
 void CPSocket::StartServer() {
-    if (!IsSocketsFull) {
-        std::thread XMPserverRx = std::thread(&CPSocket::ServerRx, this);
-        std::thread XMPserverTx = std::thread(&CPSocket::ServerTx, this);
-
-        ServerThreadsRx.push_back(move(XMPserverRx));
-
-        displayout(D_INFO, "Starting Socket Threads for Client");
-        displayout(D_INFO, "Auth Number Created: \\");
-        std::cout << AUTH_NUMBER << std::endl << std::endl;
-
-        IsSocketsFull = true;
-    }
+    ServerManagerThread = std::thread(&CPSocket::ServerManager, this);
 }
 
 bool CPSocket::IsConnected() {
@@ -179,14 +193,16 @@ RxStart:
         }
     } while (!ThreadShouldStop);
 
+    Sleep(1000);
+
     displayout(D_INFO, "[RX] CONNECTED");
     IsConnectedRx = true;
 
 #ifndef DISABLE_AUTH
     // Start Authing
     if (!ThreadShouldStop) {
-        displayout(D_LOG, "[RX] Begining Auth...");
-
+        displayout(D_INFO, "[RX] Begining Auth...");
+            
 
         while (!ThreadShouldStop) {
             std::string GetRsc = RxV(sock);
@@ -225,7 +241,7 @@ TxStart:
     displayout(D_INFO, "[TX] STARTING ...");
     displayout(D_INFO, "[TX] Starting Connection: %s::%d", ConnectionProp.IP, ConnectionProp.InBoundPort);
 
-    displayout(D_INFO, "[TX] Windows Platform - Startig WinSock");
+    displayout(D_INFO, "[TX] Windows Platform - Using WinSock");
 
     WSAData Data;
     WORD ver = MAKEWORD(2, 2);
@@ -277,6 +293,8 @@ TxStart:
         }
     } while (!ThreadShouldStop);
 
+    Sleep(1000);
+
     displayout(D_INFO, "[TX] CONNECTED");
     IsConnectedRx = true;
 
@@ -285,20 +303,19 @@ TxStart:
     if (!ThreadShouldStop) {
         displayout(D_INFO, "[TX] Sending Auth");
         while (!ThreadShouldStop) {
-            
             TxV(sock, AuthString);
 
             if (IsAuthSSC) {
-                break;
+                break; 
             }
         }
     }
-
+    displayout(D_INFO, "[TX] Done Auth");
 #endif // !DISABLE_AUTH
-
+    
     while (!ThreadShouldStop) {
         if (TxQue.size() > 0) {
-            TxV(sock, TxQue[0]);
+            TxV(sock, AuthString);
             displayout(D_LOG, TxQue[0].c_str());
             TxQue.erase(TxQue.begin());
         }
@@ -309,15 +326,195 @@ TxStart:
         ThreadShouldRestart = false;
         goto TxStart;
     }
-
+    
     return;
+   
 }
 
-void CPSocket::ServerRx() {
-    Sleep(100);
+void CPSocket::ServerManager() {
+    displayout(D_INFO, "Server Manager Started!");
+    while (!ThreadShouldStop || ThreadShouldRestart) {
+        if (ServersFull) {
+            displayout(D_INFO, "Spawning New Server");
+            srand(rand() * time(0));
+            int ClientId = (rand() * rand() / rand() + (rand() * rand() + rand() + rand()) / rand()) * rand() / rand();
+            std::thread CopyThreadRX(&CPSocket::ServerRx, this, ClientId);
+            std::thread CopyThreadTX(&CPSocket::ServerTx, this, ClientId);
+            AliveServers.push_back(ClientId);
+            ServerThreadsRx.push_back(std::move(CopyThreadRX));
+            ServerThreadsTx.push_back(std::move(CopyThreadTX));
+            HostNames.push_back("NO CONNECTION");
+
+            ServerConnectionCount++;
+            ServersFull = false;
+            displayout(D_INFO, ("Connection Count: " + std::to_string(ServerConnectionCount)).c_str());
+        }
+
+        if (ServerActivity) {
+            if (ServerThreadsRx.size() == ServerThreadsTx.size()) {
+                displayout(D_INFO, "Deleting Old Server");
+                for (int i = 0; i < ServerThreadsRx.size(); i++) {
+                    if (AliveServers[i] == -1 && ServerThreadsRx[i].joinable() && ServerThreadsTx[i].joinable()) {
+                        ServerThreadsRx[i].join();
+                        ServerThreadsTx[i].join();
+
+                        ServerThreadsRx.erase(ServerThreadsRx.begin() + i);
+                        ServerThreadsTx.erase(ServerThreadsTx.begin() + i);
+
+                        AliveServers.erase(AliveServers.begin() + i);
+                        HostNames.erase(HostNames.begin() + i);
+
+                        ServerConnectionCount--;
+                        displayout(D_INFO, ("Connection Count: " + std::to_string(ServerConnectionCount)).c_str());
+                    }
+                }
+            }
+            else {
+                displayout(D_ERROR, "Thread Mix, Thread Counts do not match");
+                displayout(D_WARNING, "Restarting Threads...");
+
+                AliveServers.empty();
+                HostNames.empty();
+                ServerConnectionCount = 0;
+                ServersFull = true;
+
+                for (int i = 0; i < ServerThreadsRx.size(); i++) {
+                    ServerThreadsRx[i].join();
+                }
+                for (int i = 0; i < ServerThreadsTx.size(); i++) {
+                    ServerThreadsTx[i].join();
+                }
+            }
+        }
+    }
+
+    if (ServerConnectionCount > 0) {
+        displayout(D_WARNING, "Killing all Servers");
+    }
+
+    AliveServers.empty();
+    HostNames.empty();
+    ServerConnectionCount = 0;
+    ServersFull = true;
+
+    for (int i = 0; i < ServerThreadsRx.size(); i++) {
+        ServerThreadsRx[i].join();
+    }
+    for (int i = 0; i < ServerThreadsTx.size(); i++) {
+        ServerThreadsTx[i].join();
+    }
+    
 }
-void CPSocket::ServerTx() {
+void CPSocket::ServerRx(int id) {
     Sleep(100);
+
+    // Initialze winsock
+    WSADATA wsData;
+    WORD ver = MAKEWORD(2, 2);
+
+    int wsOk = WSAStartup(ver, &wsData);
+    if (wsOk != 0)
+    {
+        std::cerr << "Can't Initialize winsock! Quitting" << std::endl;
+
+    }
+
+    // Create a socket
+    SOCKET listening = socket(AF_INET, SOCK_STREAM, 0);
+    if (listening == INVALID_SOCKET)
+    {
+        std::cerr << "Can't create a socket! Quitting" << std::endl;
+
+    }
+
+    // txtd the ip address and port to a socket
+    sockaddr_in hint;
+    hint.sin_family = AF_INET;
+    hint.sin_port = htons(ConnectionProp.InBoundPort);
+    hint.sin_addr.S_un.S_addr = INADDR_ANY; // Could also use inet_pton .... 
+
+    bind(listening, (sockaddr*)&hint, sizeof(hint));
+
+    // Tell Winsock the socket is for listening 
+    listen(listening, SOMAXCONN);
+
+    // Wait for a connection
+    sockaddr_in client;
+    int clientSize = sizeof(client);
+
+    SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
+
+    char host[NI_MAXHOST];		// Client's remote name
+    char service[NI_MAXSERV];	// Service (i.e. port) the client is connect on
+
+    ZeroMemory(host, NI_MAXHOST); // same as memset(host, 0, NI_MAXHOST);
+    ZeroMemory(service, NI_MAXSERV);
+
+    if (getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
+    {
+        displayout(D_INFO, (host + std::string(" Connected on Port: ") + service).c_str());
+        HostNames[LookUpArrayId(id)] = host;
+    }
+    else
+    {
+        inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
+        displayout(D_INFO, (host + std::string(" Connected on Port: ") + std::to_string(ntohs(client.sin_port))).c_str());
+    }
+
+    // Close listening socket
+    closesocket(listening);
+
+    // While loop: accept and echo message back to client
+
+
+    ServersFull = true;
+
+#ifndef DISABLE_AUTH
+    // Start Authing
+    if (!ThreadShouldStop) {
+        displayout(D_INFO, "[RX] Begining Auth...");
+
+
+        while (!ThreadShouldStop) {
+            std::string GetRsc = RxV(clientSocket);
+            displayout(D_INFO, GetRsc.c_str());
+
+
+            if (GetRsc == AuthString) {
+                displayout(D_INFO, "[RX] Got Init String ");
+                IsAuthSSC = true;
+                break;
+            }
+        }
+    }
+
+#endif // !DISABLE_AUTH
+
+    while (true)
+    {
+
+        
+
+
+       
+
+    }
+
+    // Close the socket
+    closesocket(clientSocket);
+
+    // Cleanup winsock
+    WSACleanup();
+
+
+    AliveServers[LookUpArrayId(id)] = -1;
+
+}
+void CPSocket::ServerTx(int id) {
+    Sleep(115);
+
+
+
 }
 
 std::string CPSocket::RxV(SOCKET sock) {

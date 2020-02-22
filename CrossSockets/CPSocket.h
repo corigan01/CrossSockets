@@ -67,12 +67,16 @@ public:
 private:
     std::thread SocketThreadRx;
     std::thread SocketThreadTx;
+    std::thread ServerManagerThread;
 
     std::vector<std::thread> ServerThreadsRx;
     std::vector<std::thread> ServerThreadsTx;
-
+    std::vector<std::string> HostNames;
     std::vector<int> AliveServers;
-    
+    int ServerConnectionCount = 0;
+
+    bool ServerActivity = false;
+    bool ServersFull = true;
 
     Server ConnectionProp;
 
@@ -91,8 +95,10 @@ private:
     void ClientTx();
     void ClientRx();
 
-    void ServerTx();
-    void ServerRx();
+
+    void ServerManager();
+    void ServerTx(int);
+    void ServerRx(int);
 
     void displayout(int msgType, const char* text, ...)
     {
@@ -102,6 +108,15 @@ private:
         
         std::cout << debugcolor[0] << std::endl;
 
+    }
+
+    int LookUpArrayId(int id) {
+        for (int i = 0; i < AliveServers.size(); i++) {
+            if (AliveServers[i] == id) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     void TxV(SOCKET COM, std::string Data);
