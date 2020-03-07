@@ -102,12 +102,8 @@ private:
 
     void displayout(int msgType, const char* text, ...)
     {
-        std::cout << debugcolor[msgType];
-
-        std::cout << text;
-        
-        std::cout << debugcolor[0] << std::endl;
-
+        std::cout << debugcolor[msgType] << text << debugcolor[0] << std::endl;
+       
     }
 
     int LookUpArrayId(int id) {

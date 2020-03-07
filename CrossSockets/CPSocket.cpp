@@ -352,9 +352,10 @@ void CPSocket::ServerManager() {
 
         if (ServerActivity) {
             if (ServerThreadsRx.size() == ServerThreadsTx.size()) {
-                displayout(D_INFO, "Deleting Old Server");
                 for (int i = 0; i < ServerThreadsRx.size(); i++) {
                     if (AliveServers[i] == -1 && ServerThreadsRx[i].joinable() && ServerThreadsTx[i].joinable()) {
+                        displayout(D_INFO, "Deleting Old Server...");
+
                         ServerThreadsRx[i].join();
                         ServerThreadsTx[i].join();
 
@@ -365,7 +366,10 @@ void CPSocket::ServerManager() {
                         HostNames.erase(HostNames.begin() + i);
 
                         ServerConnectionCount--;
-                        displayout(D_INFO, ("Connection Count: " + std::to_string(ServerConnectionCount)).c_str());
+                        displayout(D_INFO, ("New Connection Count: " + std::to_string(ServerConnectionCount)).c_str());
+
+                        ThreadShouldStop = false;
+                        ThreadShouldRestart = false;
                     }
                 }
             }
@@ -384,7 +388,11 @@ void CPSocket::ServerManager() {
                 for (int i = 0; i < ServerThreadsTx.size(); i++) {
                     ServerThreadsTx[i].join();
                 }
+
+                ThreadShouldStop = false;
+                ThreadShouldRestart = false;
             }
+            ServerActivity = false;
         }
     }
 
@@ -490,7 +498,7 @@ void CPSocket::ServerRx(int id) {
 
 #endif // !DISABLE_AUTH
 
-    while (true)
+    while (!ThreadShouldStop)
     {
 
         
@@ -508,6 +516,8 @@ void CPSocket::ServerRx(int id) {
 
 
     AliveServers[LookUpArrayId(id)] = -1;
+    ServerActivity = true;
+
 
 }
 void CPSocket::ServerTx(int id) {
@@ -515,6 +525,12 @@ void CPSocket::ServerTx(int id) {
 
 
 
+    while (!ThreadShouldStop) {
+    
+        Sleep(10);
+
+    }
+    
 }
 
 std::string CPSocket::RxV(SOCKET sock) {
@@ -533,6 +549,9 @@ std::string CPSocket::RxV(SOCKET sock) {
     {
         displayout(D_WARNING, "Disconnected...");
         ThreadShouldStop = true;
+    }
+    else {
+        //displayout(D_DEBUG, std::to_string(bytesReceived).c_str());
     }
     ThreadShouldRestart = true;
     return std::string(buf);
