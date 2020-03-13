@@ -43,6 +43,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <thread>
 #include <fstream>
 #include <ostream>
+#include <atomic>
 #include <time.h>  
 #include <cstdio>
 #include <sstream>
@@ -63,7 +64,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 
-#define EOR printf("[DEBUGING USE ONLY] PASSED LINE: %d. ERROR NOT BEFORE PRINT!\n", __LINE__)
+#define EOR std::cout << "[DEBUGING USE ONLY] PASSED LINE: " << __LINE__ << std::endl;
 
 #ifndef _STD
 #define _STD ::std::

@@ -4,17 +4,16 @@
 
 
 int main() {
-	CPSocket socket("127.0.0.1", 56040, 56040);
+	CPSocket socket("127.0.0.1", 56040, 56000);
 
 	//socket.StartClient();
 	socket.StartServer();
 
 	while (true) {
-		std::string Input = "";
-		std::cin >> Input;
 
-		if (Input == "STOP") break;
 	}
+	
+	std::cout << "Sure" << std::endl;
 
 	socket.~CPSocket();
 

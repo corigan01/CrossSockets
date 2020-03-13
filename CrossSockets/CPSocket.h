@@ -61,7 +61,7 @@ public:
     void SendString(std::string RecStr);
     std::vector<std::string> GetString();
     
-
+    
 
 
 private:

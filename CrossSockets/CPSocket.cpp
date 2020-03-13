@@ -30,41 +30,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 #include "CPSocket.h"
 
-/*CPSocket();
-~CPSocket();
-
-void StartClient();
-void StartServer();
-
-bool IsConnected();
-bool IsAuth();
-
-void SendString();
-std::string GetString();
-
-
-
-
-private:
-    std::thread SocketThreadRx;
-    std::thread SocketThreadTx;
-    Server ConnectionProp; 
-
-    bool IsConnectedTx = false;
-    bool IsConnectedRx = false;
-    bool IsAuthTx = false;
-    bool IsAuthRx = false;
-
-
-    void ClientTx();
-    void ClientRx();
-
-    void ServerTx();
-    void ServerRx();*/
 
 #define AuthString "AUTH - SSC HyperSocketLink (COM METHOD START - SECURE SOCKET COMMUNICATION)"
 #define bufferSize 1000000
 #define ConnectionTryCount 10
+
+#define DISABLE_AUTH 0
 
 // == CPSocket Methods
     // initing
@@ -78,6 +49,7 @@ CPSocket::~CPSocket() {
 
     bool SocketThreadRxDone = false;
     bool SocketThreadTxDone = false;
+    
 
     displayout(D_WARNING, "CPSocket Closing...");
 
@@ -413,8 +385,14 @@ void CPSocket::ServerManager() {
     }
     
 }
+
 void CPSocket::ServerRx(int id) {
     Sleep(100);
+
+    displayout(D_INFO, "[RX] STARTING ...");
+    displayout(D_INFO, "[RX] Starting Connection: %s::%d", ConnectionProp.IP, ConnectionProp.InBoundPort);
+
+    displayout(D_INFO, "[RX] Windows Platform - Using WinSock");
 
     // Initialze winsock
     WSADATA wsData;
@@ -423,7 +401,7 @@ void CPSocket::ServerRx(int id) {
     int wsOk = WSAStartup(ver, &wsData);
     if (wsOk != 0)
     {
-        std::cerr << "Can't Initialize winsock! Quitting" << std::endl;
+        displayout(D_ERROR, "[RX] Unable To Start WinSock. ERROR #%d");
 
     }
 
@@ -431,9 +409,12 @@ void CPSocket::ServerRx(int id) {
     SOCKET listening = socket(AF_INET, SOCK_STREAM, 0);
     if (listening == INVALID_SOCKET)
     {
-        std::cerr << "Can't create a socket! Quitting" << std::endl;
+        displayout(D_ERROR, "[RX] Unable To Start WinSock. ERROR #%d");
 
     }
+
+    displayout(D_INFO, "[RX] Winsock Started!");
+    displayout(D_INFO, "[RX] Starting hint structure...");
 
     // txtd the ip address and port to a socket
     sockaddr_in hint;
@@ -450,6 +431,10 @@ void CPSocket::ServerRx(int id) {
     sockaddr_in client;
     int clientSize = sizeof(client);
 
+    displayout(D_INFO, "[TX] Setup complete!");
+
+    displayout(D_INFO, "[TX] Conneting...");
+
     SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
 
     char host[NI_MAXHOST];		// Client's remote name
@@ -457,6 +442,8 @@ void CPSocket::ServerRx(int id) {
 
     ZeroMemory(host, NI_MAXHOST); // same as memset(host, 0, NI_MAXHOST);
     ZeroMemory(service, NI_MAXSERV);
+
+
 
     if (getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
     {
@@ -468,6 +455,8 @@ void CPSocket::ServerRx(int id) {
         inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
         displayout(D_INFO, (host + std::string(" Connected on Port: ") + std::to_string(ntohs(client.sin_port))).c_str());
     }
+
+    displayout(D_INFO, "[RX] CONNECTED");
 
     // Close listening socket
     closesocket(listening);
@@ -500,11 +489,12 @@ void CPSocket::ServerRx(int id) {
 
     while (!ThreadShouldStop)
     {
-
+        std::string GetString = RxV(clientSocket);
+        displayout(D_INFO, GetString.c_str());
         
-
-
-       
+        if (GetString.size() > 0) {
+            RxQue.push_back(GetString);
+        }
 
     }
 
@@ -523,13 +513,114 @@ void CPSocket::ServerRx(int id) {
 void CPSocket::ServerTx(int id) {
     Sleep(115);
 
+    displayout(D_INFO, "[TX] STARTING ...");
+    displayout(D_INFO, "[TX] Starting Connection: %s::%d", ConnectionProp.IP, ConnectionProp.InBoundPort);
 
+    displayout(D_INFO, "[TX] Windows Platform - Using WinSock");
 
-    while (!ThreadShouldStop) {
-    
-        Sleep(10);
+    // Initialze winsock
+    WSADATA wsData;
+    WORD ver = MAKEWORD(2, 2);
+
+    int wsOk = WSAStartup(ver, &wsData);
+    if (wsOk != 0)
+    {
+        displayout(D_ERROR, "[TX] Unable To Start WinSock. ERROR #%d");
 
     }
+
+    // Create a socket
+    SOCKET listening = socket(AF_INET, SOCK_STREAM, 0);
+    if (listening == INVALID_SOCKET)
+    {
+        displayout(D_ERROR, "[TX] Unable To Start WinSock. ERROR #%d");
+
+    }
+    displayout(D_INFO, "[TX] Winsock Started!");
+    displayout(D_INFO, "[TX] Starting hint structure...");
+
+
+    // txtd the ip address and port to a socket
+    sockaddr_in hint;
+    hint.sin_family = AF_INET;
+    hint.sin_port = htons(ConnectionProp.OutBound);
+    hint.sin_addr.S_un.S_addr = INADDR_ANY; // Could also use inet_pton .... 
+
+
+    bind(listening, (sockaddr*)&hint, sizeof(hint));
+
+    // Tell Winsock the socket is for listening 
+    listen(listening, SOMAXCONN);
+
+    // Wait for a connection
+    sockaddr_in client;
+    int clientSize = sizeof(client);
+
+    displayout(D_INFO, "[TX] Setup complete!");
+
+    displayout(D_INFO, "[TX] Conneting...");
+
+    SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
+
+
+    char host[NI_MAXHOST];		// Client's remote name
+    char service[NI_MAXSERV];	// Service (i.e. port) the client is connect on
+
+    ZeroMemory(host, NI_MAXHOST); // same as memset(host, 0, NI_MAXHOST);
+    ZeroMemory(service, NI_MAXSERV);
+
+
+    if (getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
+    {
+        displayout(D_INFO, (host + std::string(" Connected on Port: ") + service).c_str());
+        HostNames[LookUpArrayId(id)] = host;
+    }
+    else
+    {
+        inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
+        displayout(D_INFO, (host + std::string(" Connected on Port: ") + std::to_string(ntohs(client.sin_port))).c_str());
+    }
+
+    displayout(D_INFO, "[TX] CONNECTED");
+
+    // Close listening socket
+    closesocket(listening);
+
+    // While loop: accept and echo message back to client
+
+
+    ServersFull = true;
+
+#ifndef DISABLE_AUTH
+    // Start Authing
+    if (!ThreadShouldStop) {
+        displayout(D_INFO, "[TX] Begining Auth...");
+
+
+        while (!ThreadShouldStop) {
+            TxV(clientSocket, AuthString);
+
+            
+            if (IsAuthSSC) {
+                break;
+            }
+        }
+    }
+
+#endif // !DISABLE_AUTH
+
+    while (!ThreadShouldStop)
+    {
+        if (TxQue.size() > 0) {
+            TxV(clientSocket, TxQue[0]);
+            displayout(D_LOG, TxQue[0].c_str());
+            TxQue.erase(TxQue.begin());
+        }
+    }
+
+    // Close the socket
+    closesocket(clientSocket);
+
     
 }
 
