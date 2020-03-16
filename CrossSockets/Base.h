@@ -70,51 +70,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define _STD ::std::
 #endif // !_STD
 
-// Defines the color output for the console
-namespace ColorM {
-	enum Code {
-		FG_RED = 31,
-		FG_GREEN = 32,
-		FG_BLUE = 34,
-		FG_YELLOW = 33,
-		FG_DEFAULT = 39,
-		FG_MAGENTA = 35,
-		BG_RED = 41,
-		BG_GREEN = 42,
-		BG_BLUE = 44,
-		BG_DEFAULT = 49
-
-	};
-	class Modifier {
-		Code code;
-	public:
-		Modifier(Code pCode) : code(pCode) {}
-		friend std::ostream&
-			operator<<(std::ostream& os, const Modifier& mod) {
-			return os << "\033[" << mod.code << "m";
-		}
-	};
-}
-ColorM::Modifier redM(ColorM::FG_RED);
-ColorM::Modifier greenM(ColorM::FG_GREEN);
-ColorM::Modifier blueM(ColorM::FG_BLUE);
-ColorM::Modifier magentaM(ColorM::FG_MAGENTA);
-ColorM::Modifier yellowM(ColorM::FG_YELLOW);
-ColorM::Modifier defM(ColorM::FG_DEFAULT);
-
-// defines the log types for outputting
-enum Debug
-{
-	D_LOG = 1,
-	D_FILE,
-	D_DEBUG,
-	D_ERROR,
-	D_INFO,
-	D_WARNING,
-};
-
-_STD string debugstring[] = { "NULL", "LOG", "FILE", "DEBUG", "ERROR", "INFO", "WARNING" };
-ColorM::Modifier debugcolor[] = { defM, blueM, greenM, redM, redM, magentaM, yellowM };
 
 
 // displays out the log

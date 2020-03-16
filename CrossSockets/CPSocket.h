@@ -37,6 +37,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define Template 
 
 #include "Base.h" 
+#include "displayout.h"
 
 struct Server
 {
@@ -45,7 +46,7 @@ struct Server
     int OutBound = 56050;
 };
 
-class CPSocket
+class CPSocket : private displayout
 {
 public:
     CPSocket();
@@ -100,11 +101,7 @@ private:
     void ServerTx(int);
     void ServerRx(int);
 
-    void displayout(int msgType, const char* text, ...)
-    {
-        std::cout << debugcolor[msgType] << text << debugcolor[0] << std::endl;
-       
-    }
+    
 
     int LookUpArrayId(int id) {
         for (int i = 0; i < AliveServers.size(); i++) {

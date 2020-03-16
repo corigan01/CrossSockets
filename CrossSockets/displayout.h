@@ -70,6 +70,64 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 std::atomic<bool> __IsDisplaying = false;
 
+enum Debug_D
+{
+    D_DEF = 0,
+    D_LOG,
+    D_FILE,
+    D_DEBUG,
+    D_ERROR,
+    D_INFO,
+    D_WARNING,
+};
+
+namespace D_COLOR {
+    // Defines the color output for the console
+    namespace ColorM {
+        enum Code {
+            FG_RED = 31,
+            FG_GREEN = 32,
+            FG_BLUE = 34,
+            FG_YELLOW = 33,
+            FG_DEFAULT = 39,
+            FG_MAGENTA = 35,
+            BG_RED = 41,
+            BG_GREEN = 42,
+            BG_BLUE = 44,
+            BG_DEFAULT = 49
+
+        };
+        class Modifier {
+            Code code;
+        public:
+            Modifier(Code pCode) : code(pCode) {}
+            friend std::ostream&
+                operator<<(std::ostream& os, const Modifier& mod) {
+                return os << "\033[" << mod.code << "m";
+            }
+        };
+    }
+    ColorM::Modifier redM(ColorM::FG_RED);
+    ColorM::Modifier greenM(ColorM::FG_GREEN);
+    ColorM::Modifier blueM(ColorM::FG_BLUE);
+    ColorM::Modifier magentaM(ColorM::FG_MAGENTA);
+    ColorM::Modifier yellowM(ColorM::FG_YELLOW);
+    ColorM::Modifier defM(ColorM::FG_DEFAULT);
+
+    std::string debugstring[] = { "NULL", "LOG", "FILE", "DEBUG", "ERROR", "INFO", "WARNING" };     // Convert the Color to a readable displayname
+    ColorM::Modifier debugcolor[] = { D_COLOR::defM, D_COLOR::blueM, D_COLOR::greenM, D_COLOR::redM, D_COLOR::redM, D_COLOR::magentaM, D_COLOR::yellowM };             // Convert the Color to a color name
+
+    typedef struct __ObjectDisplayColorString {
+        std::string Message;
+        std::string Prompt;
+
+        ColorM::Modifier DebugType;
+
+    } __OBJSTRING;
+
+   
+
+}
 
 class displayout
 {
@@ -86,10 +144,14 @@ public:
 #endif
     
 protected:
-    
-
+   
 private:
-    std::atomic<std::vector<std::string>> PreDisplayControl;
+    std::vector<D_COLOR::__OBJSTRING> PreDisplayControl;
+    std::thread ThreadDisplay;
+
+    bool SetToQuit = false;
+
+    
 
     void Threaded_Display();
 };
