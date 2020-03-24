@@ -115,7 +115,6 @@ namespace D_COLOR {
     ColorM::Modifier defM(ColorM::FG_DEFAULT);
 
     std::string debugstring[] = { "NULL", "LOG", "FILE", "DEBUG", "ERROR", "INFO", "WARNING" };     // Convert the Color to a readable displayname
-    ColorM::Modifier debugcolor[] = { D_COLOR::defM, D_COLOR::blueM, D_COLOR::greenM, D_COLOR::redM, D_COLOR::redM, D_COLOR::magentaM, D_COLOR::yellowM };             // Convert the Color to a color name
 
     typedef struct __ObjectDisplayColorString {
         std::string Message;
@@ -124,9 +123,6 @@ namespace D_COLOR {
         ColorM::Modifier DebugType;
 
     } __OBJSTRING;
-
-   
-
 }
 
 class displayout

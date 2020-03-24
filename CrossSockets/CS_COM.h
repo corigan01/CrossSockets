@@ -33,60 +33,49 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // ---------------- CODE ---------------- \\
 
-#include "displayout.h"
+#include "Base.h"
 
 
-displayout::displayout() {
-    // Init the display thread
-
-    ThreadDisplay = std::thread(&displayout::Threaded_Display, this);
 
 
-}
+class CS_COM
+{
+public:
+    CS_COM(SOCKET Socket);
+    ~CS_COM(/*Global*/);
 
-displayout::~displayout() {
-    // Join the main thread from here
-    SetToQuit = true;
-
-    // if it takes too long for the thread to join then we can hang here
-    /// TODO fix this hang
-    while (ThreadDisplay.joinable()) {
-        ThreadDisplay.join();
-    }
- 
-}
-
-void displayout::out(int enumTypeColor, std::string ToDisplay) {
-    auto ThreadPart = PreDisplayControl;
-
-    D_COLOR::ColorM::Modifier ModColor[] = { D_COLOR::defM, D_COLOR::blueM, D_COLOR::greenM, D_COLOR::redM, D_COLOR::redM, D_COLOR::magentaM, D_COLOR::yellowM };
-
-    D_COLOR::__OBJSTRING ColorBack = { ToDisplay, D_COLOR::debugstring[enumTypeColor], ModColor[enumTypeColor]};
-
-    ThreadPart.push_back(ColorBack);
-
-    PreDisplayControl = ThreadPart;
-}
-
-void displayout::Threaded_Display() {
-    // Start the init for the display thread that will be displaying all content from a thread(s)
-   
-    while (!SetToQuit) {
-
-        auto ThreadPart = PreDisplayControl;
-        PreDisplayControl.empty();
+protected:
+    void Send();
+    
 
 
-        if (ThreadPart.size() > 0 && !__IsDisplaying) {
-            __IsDisplaying = true;
+};
 
-            for (auto i : ThreadPart) {
-                std::cout << i.DebugType << "[" << i.Prompt << "]: " << i.Message << D_COLOR::defM << std::endl;
-            }
+/*
+    char buf[bufferSize + 10];
+    ZeroMemory(buf, bufferSize + 10);
 
-            __IsDisplaying = false;
-        }
-
+    // Wait for client to send data
+    int bytesReceived = recv(sock, buf, bufferSize + 10, 0);
+    if (bytesReceived == SOCKET_ERROR)
+    {
+        out(D_ERROR, "Error in recv, Quitting Thread...");
+        ThreadShouldStop = true;
     }
 
+    if (bytesReceived == 0)
+    {
+        out(D_WARNING, "Disconnected...");
+        ThreadShouldStop = true;
+    }
+    else {
+        //out(D_DEBUG, std::to_string(bytesReceived).c_str());
+    }
+    ThreadShouldRestart = true;
+    return std::string(buf);
 }
+
+void CPSocket::TxV(SOCKET COM, std::string Data) {
+    send(COM, Data.c_str(), Data.length() + 1, 0);
+}
+*/

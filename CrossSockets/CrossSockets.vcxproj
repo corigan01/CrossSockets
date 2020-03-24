@@ -143,12 +143,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CPSocket.cpp" />
+    <ClCompile Include="CrossSockets.cpp" />
+    <ClCompile Include="CS_Client.cpp" />
+    <ClCompile Include="CS_COM.cpp" />
+    <ClCompile Include="CS_Server.cpp" />
+    <ClCompile Include="CS_Threads.cpp" />
     <ClCompile Include="displayout.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Base.h" />
     <ClInclude Include="CPSocket.h" />
+    <ClInclude Include="CrossSockets.h" />
+    <ClInclude Include="CS_Client.h" />
+    <ClInclude Include="CS_COM.h" />
+    <ClInclude Include="CS_Server.h" />
+    <ClInclude Include="CS_Threads.h" />
     <ClInclude Include="displayout.h" />
     <ClInclude Include="Template.h" />
   </ItemGroup>

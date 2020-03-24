@@ -1,25 +1,18 @@
-#include "CPSocket.h"
+#include "CrossSockets.h"
 #include "displayout.h"
 
  //#define DISABLE_AUTH 0 /*If you want to disable the SSC */
 
 
 int main() {
+	// so look at the CPSockets.cpp file
 	
-	CPSocket socket("127.0.0.1", 56040, 56000);
+	std::string input = "HONK HONK THE DUCK";
 
-	//socket.StartClient();
-	socket.StartServer();
 
-	while (true) {
 
-	}
-	
-	std::cout << "Sure" << std::endl;
 
-	socket.~CPSocket();
-	
 
-	
+
 
 }

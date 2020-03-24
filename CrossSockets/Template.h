@@ -33,6 +33,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // ---------------- CODE ---------------- \\
 
+#include "Base.h"
+
 #ifndef Template
 #define Template 
 
