@@ -27,9 +27,6 @@
     <ClCompile Include="CrossSockets.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CS_Threads.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="CS_Client.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -54,9 +51,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CrossSockets.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CS_Threads.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CS_Client.h">

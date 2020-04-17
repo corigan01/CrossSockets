@@ -350,8 +350,8 @@ void CPSocket::ServerManager() {
                 out(D_ERROR, "Thread Mix, Thread Counts do not match");
                 out(D_WARNING, "Restarting Threads...");
 
-                AliveServers.empty();
-                HostNames.empty();
+                AliveServers.clear();
+                HostNames.clear();
                 ServerConnectionCount = 0;
                 ServersFull = true;
 
@@ -373,8 +373,8 @@ void CPSocket::ServerManager() {
         out(D_WARNING, "Killing all Servers");
     }
 
-    AliveServers.empty();
-    HostNames.empty();
+    AliveServers.clear();
+    HostNames.clear();
     ServerConnectionCount = 0;
     ServersFull = true;
 

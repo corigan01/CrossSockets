@@ -34,8 +34,60 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ---------------- CODE ---------------- \\
 
 #include "Base.h"
+#include "displayout.h"  
+
+struct ServVect {
+    std::string Name;
+    std::vector<std::string> RecvingQue;
+    std::vector<std::string> SendingQue;
+    bool shutdown = false;
+};
+
+
 
 class CS_Server
 {
+public:
+    CS_Server(int port, bool AddBuildBack = false, bool htmlHost = false);
+    ~CS_Server();
+
+    std::vector<std::string> GetAllClientNames();
+    std::vector<ServVect>*   GetAllClientSerVect();
+    ServVect* GetClientSerVect(std::string Name);
+    void HostHtml(std::string Html);
+
+    void SendToClient(std::string Name, std::string Send);
+    void SendToAll(std::string Send);
+
+    int LookUpArrayId(int id) {
+        for (int i = 0; i < SocketIds.size(); i++) {
+            if (SocketIds[i] == id) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+
+private:
+    std::vector<std::thread>   ThreadPool       ;
+    std::thread                SMT;             // Server Manager Thread
+    std::vector<std::string>   ClientNames      ;
+    std::vector<int>           SocketIds        ;
+    std::vector<ServVect>      ServerQue        ;
+    int                        ConnectionCount  = 0;
+    bool                       ServerActivity   = false;
+    bool                       ServersFull      = true;
+    bool                       StopAll          = false;
+    bool                       stringBuildback  = false;
+    bool                       HtmlHost         = false;
+    Server                     ConnectionProp   ;
+    displayout                 dis              ;
+    std::string                HtmlF            ;
+    
+
+
+    void ServerManager ();
+    void ServerThread  (int id);
 };
 

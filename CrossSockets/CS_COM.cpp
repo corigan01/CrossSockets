@@ -36,7 +36,147 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "Base.h"
 #include "CS_COM.h"
 
-void Send()
-{
+CS_COM::CS_COM(SOCKET *sock) {
+    Displ.out(D_INFO, "Stack Size of block is " + std::to_string(IO_SIZE) + " Bytes");
 
+    SendingThr = std::thread(&CS_COM::SendThread, this);
+    RecvingThr = std::thread(&CS_COM::RecvThread, this);
+    this->sock = sock;
+}
+
+CS_COM::~CS_COM() {
+    KillThreads = true;
+
+    SendingThr.join();
+    RecvingThr.join();
+    
+
+}
+
+void CS_COM::Send(std::string Send) {
+    std::vector<std::string> BrokenUp;
+
+    //BrokenUp.push_back("\h");
+
+    std::string Built;
+    for (int i = 0; i < Send.size(); i++) {
+        if (Built.length() < IO_SIZE) {
+            Built += Send[i];
+        }
+        else {
+            BrokenUp.push_back(Built);
+            Built = Send[i];
+        }
+    }
+    BrokenUp.push_back(Built); //+"\g");
+    
+    
+    
+
+
+    for (auto i : BrokenUp) {
+        //Displ.out(D_INFO, i);
+        //Displ.out(D_INFO, std::to_string(Built.length()) + " Bytes");
+
+        SendingQue.push_back(i);
+    }
+
+}
+
+std::vector<std::string> CS_COM::Recv() {
+
+
+    if (RecvingQue.size() > 0) {
+        auto Sendout = RecvingQue;
+        RecvingQue.clear();
+
+        return Sendout;
+    }
+
+    std::vector<std::string> non;
+    return non;
+
+}
+
+void CS_COM::SendThread() {
+    while (!KillThreads) {
+        sleep_for(16ms);
+        for (auto i : SendingQue) {
+            send((SOCKET)*sock, i.c_str(), i.length() + 1, 0);
+
+        }
+        SendingQue.clear();
+    }
+
+
+}
+
+void CS_COM::RecvThread() {
+   
+    while (!KillThreads) {
+        sleep_for(16ms);
+        char buf[IO_SIZE + 20];
+        ZeroMemory(buf, IO_SIZE + 20);
+
+        // Wait for client to send data
+        int bytesReceived = recv((SOCKET)*sock, buf, IO_SIZE + 20, 0);
+        if (bytesReceived == SOCKET_ERROR)
+        {
+            Displ.out(D_ERROR, "Error in recv, Quitting Thread...");
+            ComError = true;
+            break;
+        }
+        if (bytesReceived == 0)
+        {
+            Displ.out(D_WARNING, "Disconnected...");
+            ComError = true;
+            break;
+        }
+       
+        std::string str = std::string(buf);
+
+        if (str.size() == 0)
+            continue;
+
+        /*else if (str[0] == '\h' && str.back() == '\g') {
+            std::string Mstr = str;
+
+            Mstr.erase(Mstr.begin());
+            Mstr.erase(Mstr.end());
+
+
+            RecvingQue.push_back(Mstr);
+        }
+
+        else if (str[0] == '\n' && str.back() != '\g') {
+            std::string Mstr = str;
+
+            Mstr.erase(Mstr.begin());
+
+            HoldingPos += Mstr;
+        }
+
+        else if (str[0] != '\n' && str.back() == '\g') {
+            std::string Mstr = str;
+
+            Mstr.erase(Mstr.end());
+
+            RecvingQue.push_back(HoldingPos + Mstr);
+
+            HoldingPos = "";
+
+        }
+
+        else {
+            HoldingPos += str;
+        }*/
+
+        RecvingQue.push_back(str);
+
+        Displ.out(D_INFO, str);
+
+
+    }
+
+    KillThreads = true;
 }

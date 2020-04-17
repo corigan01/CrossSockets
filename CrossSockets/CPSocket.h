@@ -39,12 +39,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "Base.h" 
 #include "displayout.h"
 
-struct Server
-{
-    std::string IP = "127.0.0.1";
-    int InBoundPort = 56010;
-    int OutBound = 56050;
-};
+
 
 class CPSocket : private displayout
 {

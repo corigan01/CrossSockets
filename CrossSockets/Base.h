@@ -50,6 +50,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <algorithm>
 
 
+using namespace std::this_thread; // sleep_for, sleep_until
+using namespace std::chrono; // nanoseconds, system_clock, seconds
+
+
 #ifdef _WIN32
 #include <WS2tcpip.h>
 #include <chrono>
@@ -62,7 +66,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #endif // __linux
 
-
+using std::cout;
+using std::endl;
 
 #define EOR std::cout << "[DEBUGING USE ONLY] PASSED LINE: " << __LINE__ << std::endl;
 
@@ -95,7 +100,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #define str(x) #x
 #define glue(x, y) x ## y
 
-
+struct Server
+{
+    std::string IP = "127.0.0.1";
+    int InBoundPort = 56010;
+    int OutBound = 56050;
+};
 
 
 #endif // !Template

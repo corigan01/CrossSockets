@@ -34,21 +34,50 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ---------------- CODE ---------------- \\
 
 #include "Base.h"
+#include "displayout.h"
+
+#define GB * 1000000000
+#define MB * 1000000 
+#define KB * 1000
 
 
+#define IO_SIZE 4 KB
 
 
 class CS_COM
 {
 public:
-    CS_COM(SOCKET Socket);
+    CS_COM(SOCKET *sock);
     ~CS_COM(/*Global*/);
 
-protected:
-    void Send();
+//protected:
+    void Send(std::string Send);
+    std::vector<std::string> Recv();
+
+    bool Error() {
+        return ComError;
+    }
+
+private:
+    displayout Displ;
     
+    std::vector<std::string> SendingQue;
+    std::vector<std::string> RecvingQue;
 
+    std::string HoldingPos;
+    size_t BytesGot;
 
+    std::thread SendingThr;
+    std::thread RecvingThr;
+
+    SOCKET *sock;
+
+    bool ComError = false;
+
+    bool KillThreads = false;
+
+    void SendThread();
+    void RecvThread();
 };
 
 /*
@@ -78,4 +107,4 @@ protected:
 void CPSocket::TxV(SOCKET COM, std::string Data) {
     send(COM, Data.c_str(), Data.length() + 1, 0);
 }
-*/
+*/              

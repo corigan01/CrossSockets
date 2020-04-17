@@ -70,23 +70,24 @@ void displayout::out(int enumTypeColor, std::string ToDisplay) {
 
 void displayout::Threaded_Display() {
     // Start the init for the display thread that will be displaying all content from a thread(s)
-   
     while (!SetToQuit) {
+        sleep_for(66ms);
 
+        if (!__IsDisplaying) {
         auto ThreadPart = PreDisplayControl;
-        PreDisplayControl.empty();
+        PreDisplayControl.clear();
 
+            if (ThreadPart.size() > 0) {
+                __IsDisplaying = true;
 
-        if (ThreadPart.size() > 0 && !__IsDisplaying) {
-            __IsDisplaying = true;
-
-            for (auto i : ThreadPart) {
-                std::cout << i.DebugType << "[" << i.Prompt << "]: " << i.Message << D_COLOR::defM << std::endl;
+                for (auto i : ThreadPart) {
+                    if (i.Message.size() > 0) {
+                        std::cout << i.DebugType << "[" << i.Prompt << "]: " << i.Message << D_COLOR::defM << std::endl;
+                    }
+                }
+                __IsDisplaying = false;
             }
-
-            __IsDisplaying = false;
         }
-
     }
 
 }
