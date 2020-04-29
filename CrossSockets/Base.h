@@ -48,6 +48,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <cstdio>
 #include <sstream>
 #include <algorithm>
+#include <excpt.h>
 
 
 using namespace std::this_thread; // sleep_for, sleep_until
@@ -63,7 +64,7 @@ using namespace std::chrono; // nanoseconds, system_clock, seconds
 #endif // _WIN32
 
 #ifdef __linux
-
+#error "Linux is not suppored yet, we still use chrono for timing :("
 #endif // __linux
 
 using std::cout;
@@ -93,12 +94,6 @@ using std::endl;
 	std::cout << debugcolor[0];
 
 }*/
-
-// Defining Helpful macros 
-#define FOR(varname, iterations) for (int varname = 0; varname < iterations; varname++)
-#define xstr(x) str(x)
-#define str(x) #x
-#define glue(x, y) x ## y
 
 struct Server
 {

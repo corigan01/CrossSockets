@@ -69,6 +69,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #endif
 
 std::atomic<bool> __IsDisplaying = false;
+std::vector<std::string> AllLog;
 
 enum Debug_D
 {

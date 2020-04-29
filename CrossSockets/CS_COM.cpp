@@ -36,16 +36,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "Base.h"
 #include "CS_COM.h"
 
-CS_COM::CS_COM(SOCKET *sock) {
-    Displ.out(D_INFO, "Stack Size of block is " + std::to_string(IO_SIZE) + " Bytes");
-
+CS_COM::CS_COM(SOCKET *sock, bool NoOutput) {
     SendingThr = std::thread(&CS_COM::SendThread, this);
     RecvingThr = std::thread(&CS_COM::RecvThread, this);
     this->sock = sock;
+
+    NoOut = NoOutput;
+
+    if (!NoOut) Displ.out(D_INFO, "Stack Size of block is " + std::to_string(IO_SIZE) + " Bytes");
 }
 
 CS_COM::~CS_COM() {
     KillThreads = true;
+
+    
 
     SendingThr.join();
     RecvingThr.join();
@@ -75,8 +79,8 @@ void CS_COM::Send(std::string Send) {
 
 
     for (auto i : BrokenUp) {
-        //Displ.out(D_INFO, i);
-        //Displ.out(D_INFO, std::to_string(Built.length()) + " Bytes");
+        if(!NoOut) Displ.out(D_INFO, i);
+        //if(!NoOut) Displ.out(D_INFO, std::to_string(Built.length()) + " Bytes");
 
         SendingQue.push_back(i);
     }
@@ -89,7 +93,7 @@ std::vector<std::string> CS_COM::Recv() {
     if (RecvingQue.size() > 0) {
         auto Sendout = RecvingQue;
         RecvingQue.clear();
-
+        
         return Sendout;
     }
 
@@ -101,11 +105,12 @@ std::vector<std::string> CS_COM::Recv() {
 void CS_COM::SendThread() {
     while (!KillThreads) {
         sleep_for(16ms);
-        for (auto i : SendingQue) {
-            send((SOCKET)*sock, i.c_str(), i.length() + 1, 0);
-
+        for (int i = 0; i < SendingQue.size(); i++) {
+            send((SOCKET)*sock, SendingQue[i].c_str(), SendingQue[i].length() + 1, 0);
         }
+        
         SendingQue.clear();
+        
     }
 
 
@@ -122,13 +127,13 @@ void CS_COM::RecvThread() {
         int bytesReceived = recv((SOCKET)*sock, buf, IO_SIZE + 20, 0);
         if (bytesReceived == SOCKET_ERROR)
         {
-            Displ.out(D_ERROR, "Error in recv, Quitting Thread...");
+            if(!NoOut) Displ.out(D_ERROR, "Error in recv, Quitting Thread...");
             ComError = true;
             break;
         }
         if (bytesReceived == 0)
         {
-            Displ.out(D_WARNING, "Disconnected...");
+            if(!NoOut) Displ.out(D_WARNING, "Disconnected...");
             ComError = true;
             break;
         }
@@ -173,7 +178,7 @@ void CS_COM::RecvThread() {
 
         RecvingQue.push_back(str);
 
-        Displ.out(D_INFO, str);
+        if(!NoOut) Displ.out(D_INFO, str);
 
 
     }

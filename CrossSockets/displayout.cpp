@@ -83,6 +83,7 @@ void displayout::Threaded_Display() {
                 for (auto i : ThreadPart) {
                     if (i.Message.size() > 0) {
                         std::cout << i.DebugType << "[" << i.Prompt << "]: " << i.Message << D_COLOR::defM << std::endl;
+                        AllLog.push_back(i.Message);
                     }
                 }
                 __IsDisplaying = false;

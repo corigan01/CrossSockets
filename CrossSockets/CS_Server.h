@@ -59,6 +59,11 @@ public:
     void SendToClient(std::string Name, std::string Send);
     void SendToAll(std::string Send);
 
+    void DisconnectClient(std::string Name);
+    void SetConnections(bool connect);
+    void DisconnectAll();
+    
+
     int LookUpArrayId(int id) {
         for (int i = 0; i < SocketIds.size(); i++) {
             if (SocketIds[i] == id) {
@@ -81,6 +86,7 @@ private:
     bool                       StopAll          = false;
     bool                       stringBuildback  = false;
     bool                       HtmlHost         = false;
+    bool                       Disconnect       = false;
     Server                     ConnectionProp   ;
     displayout                 dis              ;
     std::string                HtmlF            ;

@@ -47,7 +47,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 class CS_COM
 {
 public:
-    CS_COM(SOCKET *sock);
+    CS_COM(SOCKET* sock, bool NoOutput = false);
     ~CS_COM(/*Global*/);
 
 //protected:
@@ -73,7 +73,7 @@ private:
     SOCKET *sock;
 
     bool ComError = false;
-
+    bool NoOut = false;
     bool KillThreads = false;
 
     void SendThread();

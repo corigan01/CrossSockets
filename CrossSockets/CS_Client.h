@@ -34,9 +34,34 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // ---------------- CODE ---------------- \\
 
 #include "Base.h"
+#include "displayout.h"  
+#include "CS_COM.h"
 
 
 class CS_Client
 {
-};
+public:
+    CS_Client(int port, std::string Ip, int TryConnectionCount = 10, bool AddStringBuildBack = false);
+    ~CS_Client();
 
+    void StopClient();
+    void StartClient();
+
+    std::vector<std::string> GetRec();
+    void Send(std::string data);
+
+
+private:
+    int Port;
+    std::string IP;
+    bool BuildBack;
+    int TryCount;
+    displayout dis;
+    std::thread ClientsThread;
+    std::vector<std::string> Recv;
+    std::vector<std::string> Sendv;
+
+    bool StopAll = false;
+
+    void ClientThread();
+};

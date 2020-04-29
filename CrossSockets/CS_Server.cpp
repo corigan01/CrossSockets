@@ -107,15 +107,33 @@ void CS_Server::HostHtml(std::string Html) {
 
 }
 
+void CS_Server::DisconnectClient(std::string Name) {
+    for (auto& i : ServerQue) {
+        if (i.Name == Name) {
+            i.shutdown = true;
+        }
+    }
+}
+
+void CS_Server::DisconnectAll() {
+    for (auto& i : ServerQue) {
+        i.shutdown = true;
+    }
+}
+
+void CS_Server::SetConnections(bool connect) {
+    Disconnect = connect;
+}
+
 
 void CS_Server::ServerManager() {
-    dis.out(D_INFO, "Server Manager has started!");
+    if(!HtmlHost) dis.out(D_INFO, "Server Manager has started!");
 
     while (!StopAll) {
         sleep_for(33ms);
 
-        if (ServersFull) {
-            dis.out(D_INFO, "Spawning New Thread Pool");
+        if (ServersFull && !Disconnect) {
+            if(!HtmlHost) dis.out(D_INFO, "Spawning New Thread Pool");
             srand(time(0));
             int ClientId = (rand() * rand() / rand() + (rand() * rand() + rand() + rand()) / rand()) * rand() / rand();
             std::thread CopyThread(&CS_Server::ServerThread, this, ClientId);
@@ -125,29 +143,22 @@ void CS_Server::ServerManager() {
 
             ConnectionCount++;
             ServersFull = false;
-            dis.out(D_INFO, "New Connection Count = " + std::to_string(ConnectionCount - 1));
+            if(!HtmlHost) dis.out(D_INFO, "New Connection Count = " + std::to_string(ConnectionCount - 1));
         }
         if (ServerActivity) {
             for (int i = 0; i < ThreadPool.size(); i++) {
                 if (SocketIds[i] == -1 && ThreadPool[i].joinable()) {
-                    dis.out(D_INFO, "Deleting Old Server...");
+                    if(!HtmlHost) dis.out(D_INFO, "Deleting Old Server...");
                     
                     ThreadPool[i].join();
-                    try
-                    {
-                        ThreadPool.erase(ThreadPool.begin() + i);
-                        SocketIds.erase(SocketIds.begin() + i);
-                        ServerQue.erase(ServerQue.begin() + i);
-                    }
-                    catch (const std::exception&)
-                    {
-                        dis.out(D_ERROR, "CAN NOT ERASE VECTORS!");
-                    }
                     
-
+                    ThreadPool.erase(ThreadPool.begin() + i);
+                    SocketIds.erase(SocketIds.begin() + i);
+                    ServerQue.erase(ServerQue.begin() + i);
+                    
                     ConnectionCount--;
 
-                    dis.out(D_INFO, "New Connection Count = " + std::to_string(ConnectionCount - 1));
+                    if(!HtmlHost) dis.out(D_INFO, "New Connection Count = " + std::to_string(ConnectionCount - 1));
                 }
             }
             ServerActivity = false;
@@ -156,23 +167,16 @@ void CS_Server::ServerManager() {
 
             std::string HtmlHeader = R"(HTTP/1.0 200 OK
 Date: Thu, 06 Aug 1998 12:00:15 GMT
-Server: Gavin/1.3.0 (Unix)
+Server: CrossSockets/0.1.5 (Unix)
 Last-Modified: Mon, 22 Jun 1998
 Content-Length: )" + std::to_string(HtmlF.size()) + R"(
 Content-Type: text/html)";
-            try
-            {
-                for (int i = 0; i < ServerQue.size(); i++) {
-                    if (ServerQue[i].Name != "NO CONNECTION")
-                        ServerQue[i].SendingQue.push_back(HtmlHeader + "\n\n" + HtmlF);
-                }
-            }
-            catch (const std::exception&)
-            {
-                dis.out(D_ERROR, "CAN NOT SEND DATA");
+            
+            for (int i = 0; i < ServerQue.size(); i++) {
+                if (ServerQue[i].Name != "NO CONNECTION")
+                    ServerQue[i].SendingQue.push_back(HtmlHeader + "\n\n" + HtmlF);
             }
                 
-            
         }
     }
 }
@@ -180,10 +184,10 @@ Content-Type: text/html)";
 void CS_Server::ServerThread(int id) {
     Sleep(100);
 
-    dis.out(D_INFO, std::to_string(id) + " STARTING ...");
-    dis.out(D_INFO, std::to_string(id) + " Starting Connection: %s::%d");
+    if(!HtmlHost) dis.out(D_INFO, std::to_string(id) + " STARTING ...");
+    if(!HtmlHost) dis.out(D_INFO, std::to_string(id) + " Starting Connection: %s::%d");
 
-    dis.out(D_INFO, std::to_string(id) + " Windows Platform - Using WinSock");
+    if(!HtmlHost) dis.out(D_INFO, std::to_string(id) + " Windows Platform - Using WinSock");
 
     // Initialze winsock
     WSADATA wsData;
@@ -204,8 +208,8 @@ void CS_Server::ServerThread(int id) {
 
     }
 
-    dis.out(D_INFO, std::to_string(id) + " Winsock Started!");
-    dis.out(D_INFO, std::to_string(id) + " Starting hint structure...");
+    if(!HtmlHost) dis.out(D_INFO, std::to_string(id) + " Winsock Started!");
+    if(!HtmlHost) dis.out(D_INFO, std::to_string(id) + " Starting hint structure...");
 
     // txtd the ip address and port to a socket
     sockaddr_in hint;
@@ -222,9 +226,9 @@ void CS_Server::ServerThread(int id) {
     sockaddr_in client;
     int clientSize = sizeof(client);
 
-    dis.out(D_INFO, std::to_string(id) + " Setup complete!");
+    if(!HtmlHost) dis.out(D_INFO, std::to_string(id) + " Setup complete!");
 
-    dis.out(D_INFO, std::to_string(id) + " Conneting...");
+    if(!HtmlHost) dis.out(D_INFO, std::to_string(id) + " Conneting...");
 
     SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
 
@@ -238,17 +242,17 @@ void CS_Server::ServerThread(int id) {
 
     if (getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
     {
-        dis.out(D_INFO, (host + std::string(" Connected on Port: ") + service).c_str());
+        if(!HtmlHost) dis.out(D_INFO, (host + std::string(" Connected on Port: ") + service).c_str());
     }
     else
     {
         inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
-        dis.out(D_INFO, (host + std::string(" Connected on Port: ") + std::to_string(ntohs(client.sin_port))).c_str());
+        if(!HtmlHost) dis.out(D_INFO, (host + std::string(" Connected on Port: ") + std::to_string(ntohs(client.sin_port))).c_str());
     }
 
     ServerQue[LookUpArrayId(id)].Name = std::to_string(id) + std::string(host);
 
-    dis.out(D_INFO, std::to_string(id) + " CONNECTED");
+    if(!HtmlHost) dis.out(D_INFO, std::to_string(id) + " CONNECTED");
 
     // Close listening socket
     closesocket(listening);
@@ -257,40 +261,37 @@ void CS_Server::ServerThread(int id) {
 
     ServersFull = true;
 
-    CS_COM com(&clientSocket);
+    CS_COM com(&clientSocket, HtmlHost);
 
     bool kill = false;
 
     while (!kill && !StopAll) {
         sleep_for(33ms);
 
-        int index = LookUpArrayId(id);
-        for (auto i : com.Recv()) {
-            ServerQue[index].RecvingQue.push_back(i);
-        }
-       
-        for (auto i : ServerQue[index].SendingQue) {
-            com.Send(i);
-        }
-
-        try
-        {
-            ServerQue[index].SendingQue.clear();
-        }
-        catch (const std::exception&)
-        {
-            dis.out(D_ERROR, "CAN NOT ERASE VECTORS!");
-        }
-        
-
         if (com.Error()) {
-            dis.out(D_ERROR, std::to_string(id) + " COM ERROR");
+            if (!HtmlHost) dis.out(D_ERROR, std::to_string(id) + " COM ERROR");
             break;
         }
 
-       
+        int index = LookUpArrayId(id);
+        for (auto &i : com.Recv()) {
+            ServerQue[index].RecvingQue.push_back(i);
+        }
+        
+        for (auto &i : ServerQue[index].SendingQue) {
+            com.Send(i);
+        }
+
+        ServerQue[index].SendingQue.clear();
+
+        if (ServerQue[index].shutdown) {
+            kill = true;
+            break;
+        }
 
     }
+
+   
 
     // Close the socket
     closesocket(clientSocket);
