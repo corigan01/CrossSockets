@@ -33,91 +33,67 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // ---------------- CODE ---------------- \\
 
-#ifndef Template
-#define Template 
+#include "Base.h"
+#include "displayout.h"  
 
-#include "Base.h" 
-#include "displayout.h"
+struct ServVect {
+    std::string Name;
+    std::vector<std::string> RecvingQue;
+    std::vector<std::string> SendingQue;
+    bool shutdown = false;
+};
 
 
 
-class CPSocket : private displayout
+class CS_Server
 {
 public:
-    CPSocket();
-    CPSocket(std::string IP, int TxPort, int RxPort);
-    ~CPSocket();
+    CS_Server(int port, bool AddBuildBack = false, bool htmlHost = false);
+    ~CS_Server();
 
-    void StartClient();
-    void StartServer();
+    std::vector<std::string> GetAllClientNames();
+    std::vector<ServVect>*   GetAllClientSerVect();
+    ServVect* GetClientSerVect(std::string Name);
+    void HostHtml(std::string Html);
 
-    bool IsConnected();
-    bool IsAuth();
+    void SendToClient(std::string Name, std::string Send);
+    void SendToAll(std::string Send);
 
-    void SendString(std::string RecStr);
-    std::vector<std::string> GetString();
-    
-    
-
-
-private:
-    std::thread SocketThreadRx;
-    std::thread SocketThreadTx;
-    std::thread ServerManagerThread;
-
-    std::vector<std::thread> ServerThreadsRx;
-    std::vector<std::thread> ServerThreadsTx;
-    std::vector<std::string> HostNames;
-    std::vector<int> AliveServers;
-    int ServerConnectionCount = 0;
-
-    bool ServerActivity = false;
-    bool ServersFull = true;
-
-    Server ConnectionProp;
-
-    std::vector<std::string> RxQue;
-    std::vector<std::string> TxQue;
-
-    bool IsConnectedTx = false;
-    bool IsConnectedRx = false;
-    bool IsAuthSSC = false;
-    bool IsSocketsFull = false;
-    bool ThreadShouldStop = false;
-    bool ThreadShouldRestart = false;
-
-    int AUTH_NUMBER = 0;
-
-    void ClientTx();
-    void ClientRx();
-
-
-    void ServerManager();
-    void ServerTx(int);
-    void ServerRx(int);
-
+    void DisconnectClient(std::string Name);
+    void SetConnections(bool connect);
+    void DisconnectAll();
     
 
     int LookUpArrayId(int id) {
-        for (int i = 0; i < AliveServers.size(); i++) {
-            if (AliveServers[i] == id) {
+        for (int i = 0; i < SocketIds.size(); i++) {
+            if (SocketIds[i] == id) {
                 return i;
             }
         }
         return -1;
     }
 
-    void TxV(SOCKET COM, std::string Data);
 
-    std::string RxV(SOCKET);
+private:
+    std::vector<std::thread>   ThreadPool       ;
+    std::thread                SMT;             // Server Manager Thread
+    std::vector<std::string>   ClientNames      ;
+    std::vector<int>           SocketIds        ;
+    std::vector<ServVect>      ServerQue        ;
+    int                        ConnectionCount  = 0;
+    bool                       ServerActivity   = false;
+    bool                       ServersFull      = true;
+    bool                       StopAll          = false;
+    bool                       stringBuildback  = false;
+    bool                       HtmlHost         = false;
+    bool                       Disconnect       = false;
+    Server                     ConnectionProp   ;
+    displayout                 dis              ;
+    std::string                HtmlF            ;
+    
+
+
+    void ServerManager ();
+    void ServerThread  (int id);
 };
-
-
-#endif // !Template
-
-
-
-
-
-
 

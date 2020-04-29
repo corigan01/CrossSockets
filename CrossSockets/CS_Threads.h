@@ -33,74 +33,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // ---------------- CODE ---------------- \\
 
-#ifndef BASE__INCLUDE__H__
-#define BASE__INCLUDE__H__ 
+#include "Base.h"
 
-//#inlcude 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <thread>
-#include <fstream>
-#include <ostream>
-#include <atomic>
-#include <time.h>  
-#include <cstdio>
-#include <sstream>
-#include <algorithm>
-#include <excpt.h>
-
-
-using namespace std::this_thread; // sleep_for, sleep_until
-using namespace std::chrono; // nanoseconds, system_clock, seconds
-
-
-#ifdef _WIN32
-#include <WS2tcpip.h>
-#include <chrono>
-
-#pragma comment (lib, "ws2_32.lib")
-
-#endif // _WIN32
-
-#ifdef __linux
-#error "Linux is not suppored yet, we still use chrono for timing :("
-#endif // __linux
-
-using std::cout;
-using std::endl;
-
-#define EOR std::cout << "[DEBUGING USE ONLY] PASSED LINE: " << __LINE__ << std::endl;
-
-#ifndef _STD
-#define _STD ::std::
-#endif // !_STD
-
-
-
-// displays out the log
-/*void displayout(int msgType, const char* text, ...)
+class CS_Threads
 {
-	std::cout << debugcolor[msgType];
-
-	va_list args;
-	va_start(args, text);
-	fprintf(stdout, (debugstring[msgType] + ": ").c_str());
-	vfprintf(stdout, text, args);
-	va_end(args);
-
-
-	fprintf(stdout, "\n");
-	std::cout << debugcolor[0];
-
-}*/
-
-struct Server
-{
-    std::string IP = "127.0.0.1";
-    int InBoundPort = 56010;
-    int OutBound = 56050;
 };
 
-
-#endif // !Template

@@ -87,10 +87,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -103,6 +105,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalOptions>/FORCE:MULTIPLE %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -141,12 +144,20 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CPSocket.cpp" />
+    <ClCompile Include="CrossSockets.cpp" />
+    <ClCompile Include="CS_Client.cpp" />
+    <ClCompile Include="CS_COM.cpp" />
+    <ClCompile Include="CS_Server.cpp" />
     <ClCompile Include="displayout.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Base.h" />
     <ClInclude Include="CPSocket.h" />
+    <ClInclude Include="CrossSockets.h" />
+    <ClInclude Include="CS_Client.h" />
+    <ClInclude Include="CS_COM.h" />
+    <ClInclude Include="CS_Server.h" />
     <ClInclude Include="displayout.h" />
     <ClInclude Include="Template.h" />
   </ItemGroup>

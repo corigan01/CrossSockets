@@ -33,74 +33,78 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // ---------------- CODE ---------------- \\
 
-#ifndef BASE__INCLUDE__H__
-#define BASE__INCLUDE__H__ 
+#include "Base.h"
+#include "displayout.h"
 
-//#inlcude 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <thread>
-#include <fstream>
-#include <ostream>
-#include <atomic>
-#include <time.h>  
-#include <cstdio>
-#include <sstream>
-#include <algorithm>
-#include <excpt.h>
+#define GB * 1000000000
+#define MB * 1000000 
+#define KB * 1000
 
 
-using namespace std::this_thread; // sleep_for, sleep_until
-using namespace std::chrono; // nanoseconds, system_clock, seconds
+#define IO_SIZE 4 KB
 
 
-#ifdef _WIN32
-#include <WS2tcpip.h>
-#include <chrono>
-
-#pragma comment (lib, "ws2_32.lib")
-
-#endif // _WIN32
-
-#ifdef __linux
-#error "Linux is not suppored yet, we still use chrono for timing :("
-#endif // __linux
-
-using std::cout;
-using std::endl;
-
-#define EOR std::cout << "[DEBUGING USE ONLY] PASSED LINE: " << __LINE__ << std::endl;
-
-#ifndef _STD
-#define _STD ::std::
-#endif // !_STD
-
-
-
-// displays out the log
-/*void displayout(int msgType, const char* text, ...)
+class CS_COM
 {
-	std::cout << debugcolor[msgType];
+public:
+    CS_COM(SOCKET* sock, bool NoOutput = false);
+    ~CS_COM(/*Global*/);
 
-	va_list args;
-	va_start(args, text);
-	fprintf(stdout, (debugstring[msgType] + ": ").c_str());
-	vfprintf(stdout, text, args);
-	va_end(args);
+//protected:
+    void Send(std::string Send);
+    std::vector<std::string> Recv();
 
+    bool Error() {
+        return ComError;
+    }
 
-	fprintf(stdout, "\n");
-	std::cout << debugcolor[0];
+private:
+    displayout Displ;
+    
+    std::vector<std::string> SendingQue;
+    std::vector<std::string> RecvingQue;
 
-}*/
+    std::string HoldingPos;
+    size_t BytesGot;
 
-struct Server
-{
-    std::string IP = "127.0.0.1";
-    int InBoundPort = 56010;
-    int OutBound = 56050;
+    std::thread SendingThr;
+    std::thread RecvingThr;
+
+    SOCKET *sock;
+
+    bool ComError = false;
+    bool NoOut = false;
+    bool KillThreads = false;
+
+    void SendThread();
+    void RecvThread();
 };
 
+/*
+    char buf[bufferSize + 10];
+    ZeroMemory(buf, bufferSize + 10);
 
-#endif // !Template
+    // Wait for client to send data
+    int bytesReceived = recv(sock, buf, bufferSize + 10, 0);
+    if (bytesReceived == SOCKET_ERROR)
+    {
+        out(D_ERROR, "Error in recv, Quitting Thread...");
+        ThreadShouldStop = true;
+    }
+
+    if (bytesReceived == 0)
+    {
+        out(D_WARNING, "Disconnected...");
+        ThreadShouldStop = true;
+    }
+    else {
+        //out(D_DEBUG, std::to_string(bytesReceived).c_str());
+    }
+    ThreadShouldRestart = true;
+    return std::string(buf);
+}
+
+void CPSocket::TxV(SOCKET COM, std::string Data) {
+    send(COM, Data.c_str(), Data.length() + 1, 0);
+}
+*/              

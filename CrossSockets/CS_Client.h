@@ -33,74 +33,35 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 // ---------------- CODE ---------------- \\
 
-#ifndef BASE__INCLUDE__H__
-#define BASE__INCLUDE__H__ 
-
-//#inlcude 
-#include <iostream>
-#include <string>
-#include <vector>
-#include <thread>
-#include <fstream>
-#include <ostream>
-#include <atomic>
-#include <time.h>  
-#include <cstdio>
-#include <sstream>
-#include <algorithm>
-#include <excpt.h>
+#include "Base.h"
+#include "displayout.h"  
+#include "CS_COM.h"
 
 
-using namespace std::this_thread; // sleep_for, sleep_until
-using namespace std::chrono; // nanoseconds, system_clock, seconds
-
-
-#ifdef _WIN32
-#include <WS2tcpip.h>
-#include <chrono>
-
-#pragma comment (lib, "ws2_32.lib")
-
-#endif // _WIN32
-
-#ifdef __linux
-#error "Linux is not suppored yet, we still use chrono for timing :("
-#endif // __linux
-
-using std::cout;
-using std::endl;
-
-#define EOR std::cout << "[DEBUGING USE ONLY] PASSED LINE: " << __LINE__ << std::endl;
-
-#ifndef _STD
-#define _STD ::std::
-#endif // !_STD
-
-
-
-// displays out the log
-/*void displayout(int msgType, const char* text, ...)
+class CS_Client
 {
-	std::cout << debugcolor[msgType];
+public:
+    CS_Client(int port, std::string Ip, int TryConnectionCount = 10, bool AddStringBuildBack = false);
+    ~CS_Client();
 
-	va_list args;
-	va_start(args, text);
-	fprintf(stdout, (debugstring[msgType] + ": ").c_str());
-	vfprintf(stdout, text, args);
-	va_end(args);
+    void StopClient();
+    void StartClient();
+
+    std::vector<std::string> GetRec();
+    void Send(std::string data);
 
 
-	fprintf(stdout, "\n");
-	std::cout << debugcolor[0];
+private:
+    int Port;
+    std::string IP;
+    bool BuildBack;
+    int TryCount;
+    displayout dis;
+    std::thread ClientsThread;
+    std::vector<std::string> Recv;
+    std::vector<std::string> Sendv;
 
-}*/
+    bool StopAll = false;
 
-struct Server
-{
-    std::string IP = "127.0.0.1";
-    int InBoundPort = 56010;
-    int OutBound = 56050;
+    void ClientThread();
 };
-
-
-#endif // !Template
