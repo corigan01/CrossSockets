@@ -136,7 +136,7 @@ void CS_Server::ServerManager() {
             /*if(!HtmlHost)*/ dis.out(D_INFO, "Spawning New Thread Pool");
             srand(time(0));
             test:
-            int ClientId = time(0);
+            int ClientId = time(0) * rand() % rand() * rand();
             for (auto id : SocketIds) {
                 if (ClientId == id) {
                     dis.out(D_WARNING, "Needed new Id");
