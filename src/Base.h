@@ -50,6 +50,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <stdio.h>
 #include <cstring>
 #include <algorithm>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <stdio.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <errno.h>
 
 
 

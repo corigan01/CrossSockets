@@ -41,6 +41,8 @@ CS_COM::CS_COM(SOCKET *sock, bool NoOutput) {
     RecvingThr = std::thread(&CS_COM::RecvThread, this);
     this->sock = sock;
 
+    //fcntl(*this->sock , F_SETFL, fcntl(*this->sock, F_GETFL) | O_NONBLOCK);
+
     NoOut = NoOutput;
 
     if (!NoOut) Displ.out(D_INFO, "Stack Size of block is " + std::to_string(IO_SIZE) + " Bytes");
@@ -49,13 +51,18 @@ CS_COM::CS_COM(SOCKET *sock, bool NoOutput) {
 CS_COM::~CS_COM() {
     KillThreads = true;
 
+    //while(!SendingThr.joinable() || !RecvingThr.joinable()) {};
     
-
-    SendingThr.join();
     RecvingThr.join();
-    
+    KillThreads = true;
+    SendingThr.join();
 
+    std::cout << shutdown(*this->sock, SHUT_RDWR) << close(*this->sock) << std::endl;;
+
+    Displ.out(D_WARNING, "COM is Ended!");
+    
 }
+
 
 void CS_COM::Send(std::string Send) {
     std::vector<std::string> BrokenUp;
@@ -106,14 +113,24 @@ void CS_COM::SendThread() {
     while (!KillThreads) {
         sleep_for(16ms);
         for (int i = 0; i < SendingQue.size(); i++) {
-            send((SOCKET)*sock, SendingQue[i].c_str(), SendingQue[i].length() + 0, 0);
+            try
+            {
+                send((SOCKET)*sock, SendingQue[i].c_str(), SendingQue[i].length() + 0, 0); 
+            }
+            catch(const std::exception& e)
+            {
+                std::cerr << e.what() << '\n';
+                KillThreads = true;
+                break;
+            }
+            
         }
         
         SendingQue.clear();
         
     }
 
-
+    Displ.out(D_WARNING, "SEND Thread Closed!");
 }
 
 void CS_COM::RecvThread() {
@@ -129,18 +146,21 @@ void CS_COM::RecvThread() {
         int bytesReceived = recv((SOCKET)*sock, buf, IO_SIZE + 20, 0);
         #endif // DEBUG
         #ifdef __linux
-        int bytesReceived = read((SOCKET)*sock, buf, IO_SIZE + 20);
+        Displ.out(D_DEBUG, "READ STARTED...");
+        int bytesReceived = recv((SOCKET)*sock, buf, IO_SIZE + 20, 0);
+        Displ.out(D_DEBUG, "READ ENDED...");
+
         #endif // DEBUG
         
         if (bytesReceived < SOCKET_ERROR)
         {
-            if(!NoOut) Displ.out(D_ERROR, "Error in recv, Quitting Thread...");
+            Displ.out(D_ERROR, "Error in recv, Quitting Thread...");
             ComError = true;
             break;
         }
         if (bytesReceived == 0)
         {
-            if(!NoOut) Displ.out(D_WARNING, "Disconnected...");
+            Displ.out(D_WARNING, "Disconnected...");
             ComError = true;
             break;
         }
@@ -185,10 +205,11 @@ void CS_COM::RecvThread() {
 
         RecvingQue.push_back(str);
 
-        if(!NoOut) Displ.out(D_INFO, str);
+         Displ.out(D_INFO, str);
 
 
     }
 
-    KillThreads = true;
+
+    Displ.out(D_WARNING, "RECV Thread Closed!");
 }

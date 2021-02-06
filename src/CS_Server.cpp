@@ -135,14 +135,20 @@ void CS_Server::ServerManager() {
         if (ServersFull && !Disconnect) {
             /*if(!HtmlHost)*/ dis.out(D_INFO, "Spawning New Thread Pool");
             srand(time(0));
+
+            int ClientId = 0;
+
             test:
-            int ClientId = time(0) * rand() % rand() * rand();
-            for (auto id : SocketIds) {
-                if (ClientId == id) {
-                    dis.out(D_WARNING, "Needed new Id");
-                    goto test;
+            {
+                ClientId = time(0) * rand() - rand() * rand();
+                for (auto id : SocketIds) {
+                    if (ClientId == id) {
+                        dis.out(D_WARNING, "Needed new Id");
+                        goto test;
+                    }
                 }
             }
+
             std::thread CopyThread(&CS_Server::ServerThread, this, ClientId);
             ThreadPool.push_back(std::move(CopyThread));
             SocketIds.push_back(ClientId);
@@ -150,9 +156,9 @@ void CS_Server::ServerManager() {
 
             ConnectionCount++;
             ServersFull = false;
-            /*if(!HtmlHost)*/ dis.out(D_INFO, "New Connection Count = " + std::to_string(ConnectionCount - 1));
+            /*if(!HtmlHost)*/ dis.out(D_INFO, "New Connection Count = " + std::to_string(ConnectionCount));
         }
-        if (1) {
+        if (ServerActivity) {
             //dis.out(D_DEBUG, std::to_string(ThreadPool.size()));
             for (int i = 0; i < ThreadPool.size(); i++) {
                 if (SocketIds[i] == -1 && ThreadPool[i].joinable()) {
@@ -166,7 +172,10 @@ void CS_Server::ServerManager() {
                     
                     ConnectionCount--;
 
-                    /*if(!HtmlHost)*/ dis.out(D_INFO, "New Connection Count = " + std::to_string(ConnectionCount - 1));
+                    /*if(!HtmlHost)*/ dis.out(D_INFO, "New Connection Count = " + std::to_string(ConnectionCount));
+                }
+                else if (!ThreadPool[i].joinable()) {
+                    dis.out(D_INFO, "Waiting for server to join back!");
                 }
             }
             ServerActivity = false;
@@ -174,9 +183,9 @@ void CS_Server::ServerManager() {
         if (HtmlHost) {
 
             std::string HtmlHeader = R"(HTTP/1.0 200 OK
-Date: Thu, 06 Aug 1998 12:00:15 GMT
-Server: CrossSockets/0.1.5 (Unix)
-Last-Modified: Mon, 22 Jun 1998
+Date: Sat, 06 Feb 2021 12:00:15 GMT
+Server: CrossSockets/0.1.5
+Last-Modified: Sat, 6 Feb 2021
 Content-Length: )" + std::to_string(HtmlF.size()) + R"(
 Content-Type: text/html)";
             
@@ -187,12 +196,14 @@ Content-Type: text/html)";
                 
         }
     }
+
+    dis.out(D_WARNING, "Server Manager has quit!");
 }
 
 
 
 void CS_Server::ServerThread(int id) {
-    Sleep(100);
+    Sleep(1000);
 
     /*if(!HtmlHost)*/ dis.out(D_INFO, std::to_string(id) + " STARTING ...");
     /*if(!HtmlHost)*/ dis.out(D_INFO, std::to_string(id) + " Starting Connection: %s::%d");
@@ -264,8 +275,6 @@ void CS_Server::ServerThread(int id) {
 
     
 
-    // Close listening socket
-    closesocket(listening);
 #endif
 
 #ifdef __linux
@@ -335,6 +344,8 @@ void CS_Server::ServerThread(int id) {
     /*if(!HtmlHost)*/ dis.out(D_INFO, std::to_string(id) + " CONNECTED");
 
 
+    {
+
     ServersFull = true;
 
     CS_COM com(&clientSocket, HtmlHost);
@@ -345,7 +356,7 @@ void CS_Server::ServerThread(int id) {
         sleep_for(33ms);
 
         if (com.Error()) {
-            if (!HtmlHost) dis.out(D_ERROR, std::to_string(id) + " COM ERROR");
+             dis.out(D_ERROR, std::to_string(id) + " COM ERROR");
             break;
         }
 
@@ -364,12 +375,9 @@ void CS_Server::ServerThread(int id) {
             kill = true;
             break;
         }
-        static int iter_connected = 0;
-        iter_connected++;
+        
 
-        if (iter_connected > 4 && HtmlHost) {
-            break;
-        }
+    }
 
     }
 
@@ -383,10 +391,10 @@ void CS_Server::ServerThread(int id) {
 #endif // DEBUG
 
 #ifdef __linux
-    close(clientSocket);
 #endif // DEBUG
     
 
+   
     dis.out(D_WARNING, "Server socket closing...");
 
     SocketIds[LookUpArrayId(id)] = -1;
